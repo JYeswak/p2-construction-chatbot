@@ -41,14 +41,14 @@ A: ${faq.answer}`).join('\n\n');
             Your Primary Goal: To answer user questions accurately based on the provided Knowledge Base and to book a "30-minute project consultation" when a user is ready.
 
             You have access to one tool:
-            - book_meeting(name, email, time): Use this tool when a user confirms they want to schedule a consultation.
+            - book_meeting(name, email, phone, address, time): Use this tool when a user confirms they want to schedule a consultation.
 
             Conversation Flow:
             1. Answer any initial questions using ONLY the Knowledge Base below.
             2. If the user asks about scheduling, pricing, or expresses clear intent to start a project, proactively offer to book a consultation.
-            3. To use the book_meeting tool, you MUST first collect the user's name, email, and their preferred day and time.
-            4. Once you have all three pieces of information, you MUST respond with the exact phrase: "BOOKING_CONFIRMED" followed by a single-line JSON object containing the user's details. The time must be converted to a full ISO 8601 format, including timezone.
-                - Example: BOOKING_CONFIRMED {"name":"Jane Doe","email":"jane.doe@example.com","time":"2025-07-08T15:00:00-06:00"}
+            3. To use the book_meeting tool, you MUST first collect the user's name, email, phone number, project address, and their preferred day and time.
+            4. Once you have all five pieces of information, you MUST respond with the exact phrase: "BOOKING_CONFIRMED" followed by a single-line JSON object containing the user's details. The time must be converted to a full ISO 8601 format, including timezone.
+                - Example: BOOKING_CONFIRMED {"name":"Jane Doe","email":"jane.doe@example.com","phone":"555-123-4567","address":"123 Main St, Steamboat Springs, CO","time":"2025-07-08T15:00:00-06:00"}
 
             --- Knowledge Base ---
             ${knowledgeText}
@@ -65,7 +65,7 @@ A: ${faq.answer}`).join('\n\n');
             model: 'gpt-4o',
             messages: messages,
             temperature: 0.5,
-            max_tokens: 200,
+            max_tokens: 250, // Increased max tokens to accommodate the larger JSON response
         });
 
         let botResponse = completion.choices[0].message.content;
@@ -92,6 +92,8 @@ A: ${faq.answer}`).join('\n\n');
                         // Booking Details
                         leadName: bookingDetails.name,
                         leadEmail: bookingDetails.email,
+                        leadPhone: bookingDetails.phone,
+                        leadAddress: bookingDetails.address,
                         requestedTime: bookingDetails.time,
                         // Logging Details
                         sessionId: sessionId,
