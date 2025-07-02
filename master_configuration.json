@@ -1,0 +1,19 @@
+{
+  "clientName": "P2 Construction",
+  "clientWebsite": "https://www.p2construction.net/",
+  "clientIndustry": "High-end residential and commercial design and construction",
+  "clientLocation": "Steamboat Springs, Colorado",
+  "ownerName": "Angel Perez",
+  "contactEmail": "angel@p2construction.net",
+  "specialties": [
+    "Custom home builds ($1M+)",
+    "Large-scale modern kitchen and bathroom renovations",
+    "Complex home additions and extensions",
+    "Exterior renovations",
+    "Commercial construction"
+  ],
+  "companyPhilosophy": "To transform spaces and enhance homes by achieving our clients' visions with passion. We treat every client like family and measure our success by their satisfaction.",
+  "founderExperience": "The company was founded in 2023 by Angel Perez. Angel has over 30 years of experience in the industry and was the lead project manager on a 24-unit luxury townhome development in one of Steamboat's most exclusive neighborhoods.",
+  "bookingMeetingTitle": "Project Consultation: P2 Construction + {leadName}",
+  "bookingMeetingDuration": 30
+}

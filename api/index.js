@@ -28,17 +28,26 @@ module.exports = async (req, res) => {
             return res.status(400).json({ error: 'History is required and must be an array.' });
         }
 
-        // --- AI Chat Logic ---
-        const knowledgeBasePath = path.join(__dirname, 'knowledge_base.json');
-        const knowledgeBaseJSON = await fs.readFile(knowledgeBasePath, 'utf8');
-        const knowledgeBase = JSON.parse(knowledgeBaseJSON);
-        const knowledgeText = knowledgeBase.faqs.map(faq => `Q: ${faq.question}
-A: ${faq.answer}`).join('\n\n');
+        // --- Dynamic AI Configuration from Master Config ---
+        const configPath = path.join(process.cwd(), 'master_configuration.json');
+        const configJSON = await fs.readFile(configPath, 'utf8');
+        const config = JSON.parse(configJSON);
+
+        // Dynamically create the knowledge base text from the config file
+        const knowledgeText = `
+            Company Name: ${config.clientName}
+            Industry: ${config.clientIndustry}
+            Location: ${config.clientLocation}
+            Owner: ${config.ownerName}
+            Philosophy: ${config.companyPhilosophy}
+            Founder Experience: ${config.founderExperience}
+            Specialties: ${config.specialties.join(', ')}
+        `;
 
         const systemPrompt = `
-            You are "Zesty," a friendly and highly capable AI assistant for P2 Construction, a design-build firm in Steamboat Springs, Colorado.
+            You are "Zesty," a friendly and highly capable AI assistant for ${config.clientName}.
 
-            Your Primary Goal: To answer user questions accurately based on the provided Knowledge Base and to book a "30-minute project consultation" when a user is ready.
+            Your Primary Goal: To answer user questions accurately based on the provided Knowledge Base and to book a "${config.bookingMeetingDuration}-minute project consultation" with ${config.ownerName} when a user is ready.
 
             You have access to one tool:
             - book_meeting(name, email, phone, address, time): Use this tool when a user confirms they want to schedule a consultation.
@@ -65,7 +74,7 @@ A: ${faq.answer}`).join('\n\n');
             model: 'gpt-4o',
             messages: messages,
             temperature: 0.5,
-            max_tokens: 250, // Increased max tokens to accommodate the larger JSON response
+            max_tokens: 250,
         });
 
         let botResponse = completion.choices[0].message.content;
@@ -73,36 +82,30 @@ A: ${faq.answer}`).join('\n\n');
         // Check if the response contains the booking confirmation keyword ANYWHERE in the string
         if (botResponse.includes("BOOKING_CONFIRMED")) {
             try {
-                // Use a regular expression to reliably extract the JSON object
                 const jsonMatch = botResponse.match(/\{.*\}/);
-                if (!jsonMatch) {
-                    throw new Error("Could not find JSON object in the AI response.");
-                }
+                if (!jsonMatch) throw new Error("Could not find JSON object in the AI response.");
+                
                 const jsonString = jsonMatch[0];
                 const bookingDetails = JSON.parse(jsonString);
 
-                // IMPORTANT: This URL will need to be replaced with your public n8n webhook URL
-                const n8nWebhookUrl = process.env.N8N_WEBHOOK_URL || 'YOUR_N8N_WEBHOOK_URL_HERE';
+                const n8nWebhookUrl = process.env.N8N_WEBHOOK_URL;
+                if (!n8nWebhookUrl) throw new Error("N8N_WEBHOOK_URL is not set.");
 
-                // Call the n8n webhook to book the meeting AND log the transcript
                 await fetch(n8nWebhookUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        // Booking Details
                         leadName: bookingDetails.name,
                         leadEmail: bookingDetails.email,
                         leadPhone: bookingDetails.phone,
                         leadAddress: bookingDetails.address,
                         requestedTime: bookingDetails.time,
-                        // Logging Details
                         sessionId: sessionId,
                         fullTranscript: history.map(msg => `${msg.role}: ${msg.content}`).join('\n')
                     }),
                 });
 
-                // Create a clean, user-friendly response, removing the keyword and JSON
-                botResponse = `Thank you, ${bookingDetails.name}! I have scheduled a 30-minute consultation for you. You will receive a calendar invitation at ${bookingDetails.email} shortly.`;
+                botResponse = `Thank you, ${bookingDetails.name}! I have scheduled a ${config.bookingMeetingDuration}-minute consultation for you. You will receive a calendar invitation at ${bookingDetails.email} shortly.`;
 
             } catch (e) {
                 console.error("Error parsing booking JSON or calling webhook:", e);
@@ -111,6 +114,8 @@ A: ${faq.answer}`).join('\n\n');
         }
 
         res.status(200).json({ reply: botResponse });
+
+
 
     } catch (error) {
         console.error('Error processing request:', error);
