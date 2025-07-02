@@ -1,0 +1,12 @@
+{
+  "name": "chatbot-demo-backend",
+  "version": "1.0.0",
+  "description": "The backend serverless function for the AI chatbot demo.",
+  "main": "api/index.js",
+  "dependencies": {
+    "openai": "^4.0.0"
+  },
+  "devDependencies": {
+    "dotenv": "^16.3.1"
+  }
+}
